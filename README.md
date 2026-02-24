@@ -1,10 +1,10 @@
 <p align="center">
-  <img width="128" height="128" alt="icon128" src="https://github.com/user-attachments/assets/429d1788-2514-42d5-b45c-e0eaf0479c4e" />
+  <img width="128" height="128" alt="TuneCat" src="https://github.com/user-attachments/assets/429d1788-2514-42d5-b45c-e0eaf0479c4e" />
 </p>
 
-<h1 align="center">TuneCat</h1>
+# TuneCat
 
-<p align="center">A Chrome extension that detects the <strong>musical key</strong> and <strong>BPM</strong> of any audio playing in your browser — in real time.</p>
+A Chrome extension that detects the **musical key** and **BPM** of any audio playing in your browser — in real time.
 
 Built for producers, musicians, and beatmakers who browse YouTube for instrumentals and need to know the key and tempo instantly, without downloading anything or leaving the browser.
 
@@ -12,6 +12,10 @@ Built for producers, musicians, and beatmakers who browse YouTube for instrument
 ![Manifest V3](https://img.shields.io/badge/Manifest-V3-blue)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue?logo=typescript&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-yellow)
+
+## Demo
+
+<video src="tunecat_demo.mp4" controls width="100%"></video>
 
 ## Features
 
