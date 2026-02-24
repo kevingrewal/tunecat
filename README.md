@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="src/icons/icon128.png" alt="TuneCat" width="128" height="128">
+  <img width="128" height="128" alt="icon128" src="https://github.com/user-attachments/assets/429d1788-2514-42d5-b45c-e0eaf0479c4e" />
 </p>
 
 <h1 align="center">TuneCat</h1>
