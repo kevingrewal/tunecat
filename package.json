@@ -1,0 +1,21 @@
+{
+  "name": "tunecat",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "webpack --watch --mode development",
+    "build": "webpack --mode production"
+  },
+  "dependencies": {
+    "meyda": "^5.6.3",
+    "realtime-bpm-analyzer": "^5.0.1"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.1.37",
+    "copy-webpack-plugin": "^13.0.1",
+    "ts-loader": "^9.5.4",
+    "typescript": "^5.9.3",
+    "webpack": "^5.105.2",
+    "webpack-cli": "^6.0.1"
+  }
+}
