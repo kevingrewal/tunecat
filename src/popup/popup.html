@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <h1 class="title">TuneCat</h1>
+
+    <div class="results">
+      <div class="result-card">
+        <div class="label">KEY</div>
+        <div class="value" id="key-value">--</div>
+        <div class="sub" id="key-relative"></div>
+      </div>
+
+      <div class="result-card">
+        <div class="label">BPM</div>
+        <div class="value" id="bpm-value">--</div>
+        <div class="sub" id="bpm-status"></div>
+      </div>
+    </div>
+
+    <button id="toggle-btn" class="btn">Start Listening</button>
+
+    <div class="download-section">
+      <div class="format-toggle">
+        <button class="format-btn active" data-format="mp3">MP3</button>
+        <button class="format-btn" data-format="wav">WAV</button>
+      </div>
+      <button id="download-btn" class="btn download-btn">Download</button>
+    </div>
+
+    <div class="status" id="status"></div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
