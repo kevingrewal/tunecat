@@ -15,7 +15,7 @@ Built for producers, musicians, and beatmakers who browse YouTube for instrument
 
 ## Demo
 
-<video src="tunecat_demo.mp4" controls width="100%"></video>
+https://github.com/user-attachments/assets/bd33359c-1880-4992-be74-55d880626abf
 
 ## Features
 
