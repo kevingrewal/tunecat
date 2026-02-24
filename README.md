@@ -1,6 +1,10 @@
-# TuneCat
+<p align="center">
+  <img src="src/icons/icon128.png" alt="TuneCat" width="128" height="128">
+</p>
 
-A Chrome extension that detects the **musical key** and **BPM** of any audio playing in your browser — in real time.
+<h1 align="center">TuneCat</h1>
+
+<p align="center">A Chrome extension that detects the <strong>musical key</strong> and <strong>BPM</strong> of any audio playing in your browser — in real time.</p>
 
 Built for producers, musicians, and beatmakers who browse YouTube for instrumentals and need to know the key and tempo instantly, without downloading anything or leaving the browser.
 
@@ -42,7 +46,7 @@ Tab Audio → chrome.tabCapture → Offscreen Document (Web Audio API)
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/tunecat.git
+git clone https://github.com/kevingrewal/tunecat.git
 cd tunecat
 
 # Install dependencies
