@@ -1,0 +1,43 @@
+{
+  "manifest_version": 3,
+  "name": "TuneCat",
+  "description": "Detect musical Key and BPM from any browser tab in real-time.",
+  "version": "0.1.0",
+  "minimum_chrome_version": "116",
+  "permissions": [
+    "tabCapture",
+    "offscreen",
+    "downloads",
+    "activeTab"
+  ],
+  "host_permissions": [
+    "https://cobaltapi.squair.xyz/*",
+    "https://api.qwkuns.me/*",
+    "https://api.dl.woof.monster/*",
+    "https://api.cobalt.liubquanti.click/*",
+    "https://api.kektube.com/*",
+    "https://cobaltapi.cjs.nz/*"
+  ],
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "background": {
+    "service_worker": "service-worker.js"
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["realtime-bpm-processor.js"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}
