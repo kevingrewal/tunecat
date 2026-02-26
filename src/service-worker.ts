@@ -40,6 +40,13 @@ chrome.runtime.onMessage.addListener(
       sendResponse({ ok: true });
       return;
     }
+
+    // Auto-stop: offscreen reached consensus on key + BPM
+    if (message.type === MessageType.ANALYSIS_COMPLETE) {
+      isAnalyzing = false;
+      activeTabId = null;
+      return;
+    }
   },
 );
 
@@ -140,6 +147,69 @@ async function tryInstance(
   return { downloadUrl, filename: data.filename };
 }
 
+const DOWNLOAD_TIMEOUT = 120_000; // 2 minutes
+
+function awaitDownload(
+  url: string,
+  filename?: string,
+): Promise<void> {
+  return new Promise((resolve, reject) => {
+    chrome.downloads.download(
+      { url, ...(filename ? { filename } : {}) },
+      (downloadId) => {
+        if (chrome.runtime.lastError || !downloadId) {
+          reject(
+            new Error(
+              chrome.runtime.lastError?.message || 'Download failed to start',
+            ),
+          );
+          return;
+        }
+
+        const timeout = setTimeout(() => {
+          chrome.downloads.onChanged.removeListener(listener);
+          chrome.downloads.cancel(downloadId, () => {
+            reject(new Error('Download timed out'));
+          });
+        }, DOWNLOAD_TIMEOUT);
+
+        const listener = (delta: chrome.downloads.DownloadDelta) => {
+          if (delta.id !== downloadId) return;
+
+          if (delta.state?.current === 'complete') {
+            clearTimeout(timeout);
+            chrome.downloads.onChanged.removeListener(listener);
+
+            // Verify the file actually has content
+            chrome.downloads.search({ id: downloadId }, (results) => {
+              const item = results[0];
+              if (item && item.bytesReceived > 0) {
+                resolve();
+              } else {
+                // Clean up the empty file, then reject so next instance is tried
+                chrome.downloads.removeFile(downloadId, () => {
+                  reject(new Error('Download produced empty file'));
+                });
+              }
+            });
+          } else if (delta.state?.current === 'interrupted') {
+            clearTimeout(timeout);
+            chrome.downloads.onChanged.removeListener(listener);
+            reject(
+              new Error(
+                (delta.error as { current?: string })?.current ||
+                  'Download interrupted',
+              ),
+            );
+          }
+        };
+
+        chrome.downloads.onChanged.addListener(listener);
+      },
+    );
+  });
+}
+
 async function handleDownload(
   tabUrl: string,
   format: 'mp3' | 'wav',
@@ -158,22 +228,8 @@ async function handleDownload(
 
       sendDownloadStatus('downloading');
 
-      chrome.downloads.download(
-        {
-          url: downloadUrl,
-          ...(filename ? { filename } : {}),
-        },
-        (downloadId) => {
-          if (chrome.runtime.lastError || !downloadId) {
-            sendDownloadStatus(
-              'error',
-              chrome.runtime.lastError?.message || 'Download failed',
-            );
-          } else {
-            sendDownloadStatus('complete');
-          }
-        },
-      );
+      await awaitDownload(downloadUrl, filename);
+      sendDownloadStatus('complete');
       return; // success — stop trying other instances
     } catch (err) {
       lastError = String(err);

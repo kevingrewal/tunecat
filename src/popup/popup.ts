@@ -12,6 +12,15 @@ const container = document.querySelector('.container')!;
 
 let isListening = false;
 let selectedFormat: 'mp3' | 'wav' = 'mp3';
+let analysisTimer: ReturnType<typeof setInterval> | null = null;
+let elapsedSeconds = 0;
+
+const ANALYSIS_ESTIMATE = 25; // seconds
+
+const keyCard = keyValue.parentElement!;
+const bpmCard = bpmValue.parentElement!;
+const progressContainer = document.getElementById('progress-container')!;
+const progressBar = document.getElementById('progress-bar')!;
 
 // On popup open, check if already analyzing
 chrome.runtime.sendMessage(
@@ -108,14 +117,28 @@ chrome.runtime.onMessage.addListener((message) => {
 
     if (data.key !== undefined) {
       keyValue.textContent = `${data.key} ${data.scale}`;
-      keyRelative.textContent = `${data.relativeKey} ${data.relativeScale}`;
+      if (data.keyStable) {
+        keyRelative.textContent = `${data.relativeKey} ${data.relativeScale} · locked`;
+        keyCard.classList.add('locked');
+      } else {
+        keyRelative.textContent = `${data.relativeKey} ${data.relativeScale}`;
+      }
     }
 
     if (data.bpm !== undefined) {
       bpmValue.textContent = `${Math.round(data.bpm)}`;
-      bpmStatus.textContent =
-        data.bpmConfidence >= 1.0 ? 'locked' : 'detecting...';
+      if (data.bpmConfidence >= 1.0) {
+        bpmStatus.textContent = 'locked';
+        bpmCard.classList.add('locked');
+      } else {
+        bpmStatus.textContent = 'detecting...';
+      }
     }
+  }
+
+  // Analysis auto-completed (both key and BPM reached consensus)
+  if (message.type === MessageType.ANALYSIS_COMPLETE && message.target === 'popup') {
+    setComplete();
   }
 
   // Download status
@@ -148,20 +171,75 @@ function setActive(): void {
   toggleBtn.textContent = 'Stop Listening';
   toggleBtn.classList.add('active');
   container.classList.add('analyzing');
-  statusEl.textContent = 'Analyzing...';
+  container.classList.remove('complete');
+  keyCard.classList.remove('locked');
+  bpmCard.classList.remove('locked');
   statusEl.classList.remove('error', 'success');
+  keyValue.textContent = '--';
+  keyRelative.textContent = '';
+  bpmValue.textContent = '--';
+  bpmStatus.textContent = 'detecting...';
+
+  // Start progress timer
+  elapsedSeconds = 0;
+  progressContainer.classList.add('active');
+  progressBar.style.width = '0%';
+  progressBar.classList.remove('complete');
+  statusEl.textContent = `Analyzing... ~${ANALYSIS_ESTIMATE}s remaining`;
+
+  analysisTimer = setInterval(() => {
+    elapsedSeconds++;
+    const remaining = Math.max(0, ANALYSIS_ESTIMATE - elapsedSeconds);
+    const progress = Math.min(95, (elapsedSeconds / ANALYSIS_ESTIMATE) * 100);
+    progressBar.style.width = `${progress}%`;
+
+    if (remaining > 0) {
+      statusEl.textContent = `Analyzing... ~${remaining}s remaining`;
+    } else {
+      statusEl.textContent = 'Finalizing...';
+    }
+  }, 1000);
 }
 
 function setInactive(): void {
   isListening = false;
+  if (analysisTimer) {
+    clearInterval(analysisTimer);
+    analysisTimer = null;
+  }
   toggleBtn.textContent = 'Start Listening';
   toggleBtn.classList.remove('active');
-  container.classList.remove('analyzing');
+  container.classList.remove('analyzing', 'complete');
+  keyCard.classList.remove('locked');
+  bpmCard.classList.remove('locked');
+  progressContainer.classList.remove('active');
+  progressBar.style.width = '0%';
+  progressBar.classList.remove('complete');
   statusEl.textContent = '';
+  statusEl.classList.remove('error', 'success');
   keyValue.textContent = '--';
   keyRelative.textContent = '';
   bpmValue.textContent = '--';
   bpmStatus.textContent = '';
+}
+
+function setComplete(): void {
+  isListening = false;
+  if (analysisTimer) {
+    clearInterval(analysisTimer);
+    analysisTimer = null;
+  }
+  toggleBtn.textContent = 'Start Listening';
+  toggleBtn.classList.remove('active');
+  container.classList.remove('analyzing');
+  container.classList.add('complete');
+  keyCard.classList.add('locked');
+  bpmCard.classList.add('locked');
+  progressBar.style.width = '100%';
+  progressBar.classList.add('complete');
+  statusEl.textContent = 'Analysis complete';
+  statusEl.classList.remove('error');
+  statusEl.classList.add('success');
 }
 
 function showError(msg: string): void {

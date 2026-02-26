@@ -9,6 +9,11 @@ let audioContext: AudioContext | null = null;
 let mediaStream: MediaStream | null = null;
 let keyDetector: KeyDetector | null = null;
 let bpmDetector: BpmDetector | null = null;
+let keyLocked = false;
+let bpmLocked = false;
+let analysisTimeout: ReturnType<typeof setTimeout> | null = null;
+
+const MAX_ANALYSIS_TIME = 45_000; // 45 second fallback timeout
 
 chrome.runtime.onMessage.addListener((message: Message) => {
   if (!('target' in message) || message.target !== 'offscreen') return;
@@ -25,6 +30,9 @@ chrome.runtime.onMessage.addListener((message: Message) => {
 async function startAnalysis(streamId: string): Promise<void> {
   // Clean up any previous session
   stopAnalysis();
+
+  keyLocked = false;
+  bpmLocked = false;
 
   try {
     // Redeem stream ID for actual MediaStream
@@ -76,6 +84,18 @@ async function startAnalysis(streamId: string): Promise<void> {
         data: { error: 'BPM detection unavailable' },
       });
     }
+
+    // Fallback timeout: auto-complete after MAX_ANALYSIS_TIME even if
+    // one detector hasn't fully stabilized
+    analysisTimeout = setTimeout(() => {
+      if (!keyLocked || !bpmLocked) {
+        chrome.runtime.sendMessage({
+          type: MessageType.ANALYSIS_COMPLETE,
+          target: 'popup',
+        });
+        stopAnalysis();
+      }
+    }, MAX_ANALYSIS_TIME);
   } catch (err) {
     console.error('Failed to start analysis:', err);
     chrome.runtime.sendMessage({
@@ -96,8 +116,14 @@ function onKeyDetected(result: KeyResult): void {
       relativeKey: result.relativeKey,
       relativeScale: result.relativeScale,
       confidence: result.confidence,
+      keyStable: result.isStable,
     },
   });
+
+  if (result.isStable && !keyLocked) {
+    keyLocked = true;
+    checkConsensus();
+  }
 }
 
 function onBpmDetected(result: BpmResult): void {
@@ -109,9 +135,29 @@ function onBpmDetected(result: BpmResult): void {
       bpmConfidence: result.confidence,
     },
   });
+
+  if (result.confidence >= 1.0 && !bpmLocked) {
+    bpmLocked = true;
+    checkConsensus();
+  }
+}
+
+function checkConsensus(): void {
+  if (keyLocked && bpmLocked) {
+    chrome.runtime.sendMessage({
+      type: MessageType.ANALYSIS_COMPLETE,
+      target: 'popup',
+    });
+    stopAnalysis();
+  }
 }
 
 function stopAnalysis(): void {
+  if (analysisTimeout) {
+    clearTimeout(analysisTimeout);
+    analysisTimeout = null;
+  }
+
   keyDetector?.stop();
   keyDetector = null;
 

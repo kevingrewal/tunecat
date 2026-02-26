@@ -11,6 +11,7 @@ export enum MessageType {
 
   // Offscreen → Popup (broadcast)
   ANALYSIS_RESULT = 'ANALYSIS_RESULT',
+  ANALYSIS_COMPLETE = 'ANALYSIS_COMPLETE',
 
   // Service Worker → Popup
   DOWNLOAD_STATUS = 'DOWNLOAD_STATUS',
@@ -55,10 +56,16 @@ export interface AnalysisResultMessage {
     relativeKey?: string;
     relativeScale?: string;
     confidence?: number;
+    keyStable?: boolean;
     bpm?: number;
     bpmConfidence?: number;
     error?: string;
   };
+}
+
+export interface AnalysisCompleteMessage {
+  type: MessageType.ANALYSIS_COMPLETE;
+  target: 'popup';
 }
 
 export interface DownloadStatusMessage {
@@ -78,4 +85,5 @@ export type Message =
   | StartAnalysisMessage
   | StopAnalysisMessage
   | AnalysisResultMessage
+  | AnalysisCompleteMessage
   | DownloadStatusMessage;

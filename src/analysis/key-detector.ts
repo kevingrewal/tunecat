@@ -17,16 +17,26 @@ export interface KeyResult {
   relativeKey: string;
   relativeScale: 'major' | 'minor';
   confidence: number;
+  isStable: boolean;
 }
 
 type KeyCallback = (result: KeyResult) => void;
 
 export class KeyDetector {
+  private static readonly STABILITY_THRESHOLD = 5;
+  private static readonly STABILITY_CONFIDENCE = 0.7;
+  private static readonly WARMUP_DETECTIONS = 4; // 8 seconds (4 × 2s intervals)
+
   private analyzer: ReturnType<typeof Meyda.createMeydaAnalyzer> | null = null;
   private chromaAccumulator: number[] = new Array(12).fill(0);
   private frameCount = 0;
   private analysisInterval: ReturnType<typeof setInterval> | null = null;
   private callback: KeyCallback;
+  private lastDetectedKey: string | null = null;
+  private lastDetectedScale: 'major' | 'minor' | null = null;
+  private consecutiveCount = 0;
+  private detectionCount = 0;
+  private _isStable = false;
 
   constructor(
     private audioContext: AudioContext,
@@ -50,9 +60,9 @@ export class KeyDetector {
     });
     this.analyzer.start();
 
-    // Run key detection every 2 seconds
+    // Run key detection every 2 seconds until stable
     this.analysisInterval = setInterval(() => {
-      if (this.frameCount > 0) {
+      if (this.frameCount > 0 && !this._isStable) {
         this.detectKey();
       }
     }, 2000);
@@ -115,12 +125,38 @@ export class KeyDetector {
     }
     this.frameCount = Math.floor(this.frameCount * 0.85);
 
+    // Track consecutive same-key detections for stability
+    const keyName = NOTE_NAMES[bestKey];
+    this.detectionCount++;
+
+    if (
+      keyName === this.lastDetectedKey &&
+      bestScale === this.lastDetectedScale &&
+      confidence >= KeyDetector.STABILITY_CONFIDENCE
+    ) {
+      this.consecutiveCount++;
+    } else {
+      this.lastDetectedKey = keyName;
+      this.lastDetectedScale = bestScale;
+      this.consecutiveCount = 1;
+    }
+
+    // Only declare stable after warm-up period gives the algorithm enough
+    // chroma data to produce reliable correlations
+    if (
+      this.detectionCount >= KeyDetector.WARMUP_DETECTIONS &&
+      this.consecutiveCount >= KeyDetector.STABILITY_THRESHOLD
+    ) {
+      this._isStable = true;
+    }
+
     this.callback({
-      key: NOTE_NAMES[bestKey],
+      key: keyName,
       scale: bestScale,
       relativeKey,
       relativeScale,
       confidence,
+      isStable: this._isStable,
     });
   }
 
@@ -157,5 +193,10 @@ export class KeyDetector {
     }
     this.chromaAccumulator = new Array(12).fill(0);
     this.frameCount = 0;
+    this.lastDetectedKey = null;
+    this.lastDetectedScale = null;
+    this.consecutiveCount = 0;
+    this.detectionCount = 0;
+    this._isStable = false;
   }
 }
