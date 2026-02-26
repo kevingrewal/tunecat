@@ -240,6 +240,18 @@ function setComplete(): void {
   statusEl.textContent = 'Analysis complete';
   statusEl.classList.remove('error');
   statusEl.classList.add('success');
+
+  // Ensure sub-text shows "locked" regardless of message ordering
+  if (bpmValue.textContent !== '--') {
+    bpmStatus.textContent = 'locked';
+  }
+  if (
+    keyValue.textContent !== '--' &&
+    keyRelative.textContent &&
+    !keyRelative.textContent.includes('· locked')
+  ) {
+    keyRelative.textContent += ' · locked';
+  }
 }
 
 function showError(msg: string): void {
